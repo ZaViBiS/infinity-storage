@@ -15,6 +15,10 @@ func ConnectDB() (*DataBase, error) {
 		return nil, err
 	}
 
+	if err := CreateTables(gormDatabase); err != nil {
+		panic(err)
+	}
+
 	db := &DataBase{DB: gormDatabase}
 
 	return db, nil

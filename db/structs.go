@@ -10,9 +10,12 @@ import (
 type File struct {
 	// TODO: додадти id, щоб можна було додавати до ключа
 	gorm.Model
-	FileName string  `json:"filename"`
-	Size     int     `json:"size"`
-	Chunks   []Chunk `gorm:"type:jsonb"`
+	ID          uint   `gorm:"primaryKey"`
+	FileName    string `json:"filename"`
+	Size        int    `json:"size"`
+	TotalChunks int
+	Status      string // uploading/completed/failed
+	OwnerAPIKey string `gorm:"index"`
 }
 
 // Chunk - зберігає id файлу і його позицію в основному файлі
@@ -21,9 +24,12 @@ type File struct {
 // It`s important to store the position to assamble the file
 type Chunk struct {
 	gorm.Model
-	ChunkID  string
-	Position int
-	Size     int
+	ID             uint `gorm:"primaryKey"`
+	FileID         string
+	Position       int
+	Size           int
+	Status         string // pending/uploading/completed/failed
+	TelegramFileID string
 }
 
 // Key - зберігає api ключи для перевірки

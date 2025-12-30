@@ -7,18 +7,21 @@ import (
 	"gorm.io/gorm"
 )
 
-func (db *DataBase) AddAPI() (string, error) {
+func (db *DataBase) NewAPIKey() (string, error) {
 	newKey, err := keyGenerator()
 	if err != nil {
 		return "", err
 	}
 
 	res, err := db.isAPIKeyExist(newKey)
-	if !res {
-		return db.AddAPI()
+	if res {
+		return db.NewAPIKey()
 	}
-	if err != nil {
-		return "", err
+
+	if !res {
+		if err != nil && err != gorm.ErrRecordNotFound {
+			panic(err)
+		}
 	}
 
 	result := db.DB.Create(&Key{Key: newKey})
