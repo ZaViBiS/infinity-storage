@@ -41,7 +41,6 @@
 {
   "file_id": "YOUR_UNIQU_FILE_ID",
   "number_of_chunks": 2,
-  "chunk_size": 7500000, # 7,5 MB
 }
 ```
 
@@ -49,11 +48,12 @@
 
 *request*
 
+data = raw bytes
+
 ```json
 {
   "file_id": "YOUR_UNIQU_FILE_ID",
-  "chunk_position": 1,
-  "data": "RAW_DATA_IN_BYTES",
+  "chunk_position": 0,
   "key": "YOUR_API_KEY",
 }
 ```

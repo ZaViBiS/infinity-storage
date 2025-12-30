@@ -2,6 +2,7 @@
 package api
 
 import (
+	"math"
 	"time"
 
 	"github.com/ZaViBiS/infinity-storage/db"
@@ -14,10 +15,10 @@ type API struct {
 	app   *fiber.App
 	tgbot *tgbot.TGBot
 	db    *db.DataBase
-	queue chan Task
+	queue chan *db.Chunk
 }
 
-func NewServer(TGBot tgbot.TGBot, db *db.DataBase) *API {
+func NewServer(TGBot tgbot.TGBot, database *db.DataBase) *API {
 	app := fiber.New()
 
 	app.Use(func(c *fiber.Ctx) error {
@@ -44,25 +45,29 @@ func NewServer(TGBot tgbot.TGBot, db *db.DataBase) *API {
 	api := &API{
 		app:   app,
 		tgbot: &TGBot,
-		db:    db,
-		queue: make(chan Task),
+		db:    database,
+		queue: make(chan *db.Chunk, 100),
 	}
 
 	api.setupRoutes()
+
+	go api.uploaderWorker()
+
 	return api
 }
 
 func (a *API) setupRoutes() {
 	a.app.Get("/", a.handleMain)
-	a.app.Get("/get_api_key", a.handleGetApiKey)
-	a.app.Post("/send", a.handleSend)
+	a.app.Get("/get_api_key", a.handleGetAPIKey)
+	a.app.Post("/new", a.handleNew)
+	a.app.Post("/send_chunk", a.handleSendChunk)
 }
 
 func (a *API) handleMain(c *fiber.Ctx) error {
 	return c.SendStatus(200)
 }
 
-func (a *API) handleGetApiKey(c *fiber.Ctx) error {
+func (a *API) handleGetAPIKey(c *fiber.Ctx) error {
 	newKey, err := a.db.NewAPIKey()
 	if err != nil {
 		log.Err(err).Msg("помилка створення api ключа")
@@ -71,35 +76,42 @@ func (a *API) handleGetApiKey(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"key": newKey})
 }
 
-func (a *API) handleSend(c *fiber.Ctx) error {
-	// TODO: треба якось додати перевірки розміру, можливо ще чогось
-	data := c.Body()
+func (a *API) handleNew(c *fiber.Ctx) error {
+	r := new(RequestNew)
 
-	if len(data) > 10*1024*1024 { // > 10MB
-		return c.SendStatus(403)
+	if err := c.BodyParser(r); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "wrong format"})
 	}
 
-	task := Task{
-		Data:     data,
-		Position: 1,  // TODO: реалізувати
-		Owner:    "", // TODO: реалізувати
-	}
-	a.queue <- task
-	return c.SendStatus(200)
+	r.TotalChunks = int(math.Ceil(float64(r.Size) / math.Ceil(float64(10*1024*1024))))
 
-	// fileID, err := a.tgbot.SendFile("test.txt", data)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// log.Debug().Str("file id", fileID)
-	//
-	// return c.JSON(fiber.Map{"file id": fileID})
+	fileID, err := a.db.CreateNewFile(r.Filename, r.Size, r.Key, r.TotalChunks)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "erororo"})
+	}
+
+	return c.Status(fiber.StatusAccepted).JSON(fiber.Map{"file_id": fileID, "number_of_chunks": r.TotalChunks})
 }
 
-// func (a *API) handleGetFile(c *fiber.Ctx) error {
-// 	c.Body()
-// 	a.tgbot.GetFileByID()
-// }
+func (a *API) handleSendChunk(c *fiber.Ctx) error {
+	r := new(RequestSendChunk)
+	r.RawData = c.BodyRaw()
+
+	if err := c.BodyParser(r); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "wrong format"})
+	}
+
+	chunk := &db.Chunk{
+		FileID:         r.FileID,
+		Position:       r.Position,
+		Size:           len(r.RawData),
+		Status:         "pending",
+		TelegramFileID: "",
+		Data:           r.RawData,
+	}
+	a.queue <- chunk
+	return c.SendStatus(200)
+}
 
 func (a *API) Start() {
 	log.Fatal().Err(a.app.Listen(":8081")).Msg("помилка запуску http серверу")

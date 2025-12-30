@@ -25,5 +25,5 @@ func ConnectDB() (*DataBase, error) {
 }
 
 func CreateTables(db *gorm.DB) error {
-	return db.AutoMigrate(&File{}, &Key{})
+	return db.AutoMigrate(&File{}, &Key{}, &Chunk{})
 }
