@@ -11,7 +11,7 @@ type File struct {
 	// TODO: додадти id, щоб можна було додавати до ключа
 	gorm.Model
 	FileName    string `json:"filename"`
-	Size        int    `json:"size"`
+	Size        int64  `json:"size"`
 	TotalChunks int
 	Status      string // uploading/completed/failed
 	OwnerAPIKey string `gorm:"index"`
@@ -23,9 +23,9 @@ type File struct {
 // It`s important to store the position to assamble the file
 type Chunk struct {
 	gorm.Model
-	FileID         int
+	FileID         uint
 	Position       int
-	Size           int
+	Size           int64
 	Status         string // pending/uploading/completed/failed
 	TelegramFileID string
 	Data           []byte

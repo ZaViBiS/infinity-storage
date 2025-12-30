@@ -1,6 +1,10 @@
 package api
 
-import "github.com/rs/zerolog/log"
+import (
+	"time"
+
+	"github.com/rs/zerolog/log"
+)
 
 type Task struct {
 	Data     []byte
@@ -18,11 +22,13 @@ func (a *API) uploaderWorker() {
 			panic(err)
 		}
 		chunk.TelegramFileID = TelegramFileID
+		chunk.Data = nil
 
-		log.Debug().Int("fileID", chunk.FileID).Msg("файл було завантажено")
+		log.Debug().Uint("fileID", chunk.FileID).Msg("файл було завантажено")
 
 		if err := a.db.AddChunkToFile(chunk); err != nil {
 			panic(err)
 		}
+		time.Sleep(2 * time.Second)
 	}
 }

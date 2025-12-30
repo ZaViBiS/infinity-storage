@@ -1,10 +1,9 @@
 package api
 
 type RequestNew struct {
-	Filename    string `json:"filename"`
-	TotalChunks int
-	Size        int    `json:"size"`
-	Key         string `json:"key"`
+	Filename string
+	Size     int
+	Key      string
 }
 
 type RequestSendChunk struct {
