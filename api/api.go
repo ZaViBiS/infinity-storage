@@ -3,6 +3,7 @@ package api
 
 import (
 	"io"
+	"math"
 	"mime"
 	"mime/multipart"
 	"strings"
@@ -136,7 +137,7 @@ func (a *API) handleUpload(c *fiber.Ctx) error {
 
 		readBuf := make([]byte, 64*1024)
 		chunk := make([]byte, 0, ChunkSize)
-		chunkIndex := 0
+		chunkIndex := 1
 		var total int64
 
 		for {
@@ -197,12 +198,8 @@ func (a *API) handleUpload(c *fiber.Ctx) error {
 			}
 		}
 
-		// FIXME: тут не правельно пораховано: було фактично 51 чанк, але в даних файлу записало 52
 		// Update file metadata after upload is finished
-		totalChunks := int(total / ChunkSize)
-		if total%ChunkSize != 0 {
-			totalChunks++
-		}
+		totalChunks := int(math.Ceil(float64(total) / float64(ChunkSize)))
 		if err := a.db.UpdateFileMetadata(fileID, filename, total, totalChunks); err != nil {
 			log.Err(err).Uint("fileID", fileID).Msg("помилка оновлення метаданих файлу")
 			// Decide how to handle this error, maybe return an error to client or just log
@@ -215,77 +212,6 @@ func (a *API) handleUpload(c *fiber.Ctx) error {
 	}
 	return c.SendStatus(fiber.StatusAccepted)
 }
-
-// func (a *API) handleUpload(c *fiber.Ctx) error {
-// 	log.Debug().Msg("початок обробки upload")
-//
-// 	// Перевірка API ключа
-// 	key, err := a.validateAPIKey(c)
-// 	if err != nil {
-// 		log.Warn().Err(err).Msg("невалідний API ключ")
-// 		return err
-// 	}
-// 	log.Debug().Str("key", key[:10]+"...").Msg("API ключ валідний")
-//
-// 	// Отримуємо Content-Type
-// 	contentType := string(c.Request().Header.ContentType())
-// 	log.Info().Str("content_type", contentType).Msg("content type")
-//
-// 	if !strings.HasPrefix(contentType, "multipart/form-data") {
-// 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-// 			"error": "потрібен multipart/form-data",
-// 		})
-// 	}
-//
-// 	// Витягуємо boundary
-// 	boundary := ""
-// 	parts := strings.Split(contentType, "boundary=")
-// 	if len(parts) == 2 {
-// 		boundary = parts[1]
-// 	} else {
-// 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-// 			"error": "boundary не знайдено",
-// 		})
-// 	}
-//
-// 	bodyStream := c.Context().RequestBodyStream()
-//
-// 	mr := multipart.NewReader(bodyStream, boundary)
-//
-// 	fileID, err := a.db.CreateNewFile(
-// 		file.Filename,
-// 		file.Size,
-// 		key,
-// 		int(file.Size/ChunkSize)) // FIXME: тут не правельно рахуются кількість чанків
-// 	if err != nil {
-// 		panic(err)
-// 	}
-//
-// 	buffer := make([]byte, ChunkSize)
-// 	chunkNumber := 0
-//
-// 	for {
-// 		chunk, err := mr.NextRawPart()
-// 		if err != nil {
-// 			panic(err)
-// 		}
-// 		chunkNumber++
-// 		rawData := buffer[:n]
-//
-// 		chunk := &db.Chunk{
-// 			FileID:   fileID,
-// 			Position: chunkNumber,
-// 			Size:     int64(len(rawData)),
-// 			Data:     rawData,
-// 		}
-//
-// 		a.queue <- chunk
-//
-// 		log.Debug().Int64("size", chunk.Size).Msg("прийнято чанк")
-// 	}
-//
-// 	return c.SendStatus(fiber.StatusAccepted)
-// }
 
 func (a *API) validateAPIKey(c *fiber.Ctx) (string, error) {
 	key := c.Get("Authorization")
