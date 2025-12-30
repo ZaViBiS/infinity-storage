@@ -21,47 +21,33 @@
 }
 ```
 
-# POST: /new
+# POST: /upload
 
-створення нового файлу для завантаження
-
-*request*
-
-```json
-{
-  "filename": "YOUR_FILE_NAME",
-  "size": 15000000, # 15 MB in bytes
-  "key": "YOUR_API_KEY",
-}
-```
-
-*resopne*
-
-```json
-{
-  "file_id": "YOUR_UNIQU_FILE_ID",
-  "number_of_chunks": 2,
-}
-```
-
-# POST: /send_chunk
+Завантажує файл у єдиному `multipart/form-data` запиті. Ім'я файлу та його розмір
+витягуються безпосередньо з multipart-форми. Сервер спочатку створює тимчасовий запис файлу,
+обробляє частини, а потім оновлює метадані файлу з фактичним ім'ям та розміром
+після завершення завантаження.
 
 *request*
 
-data = raw bytes
+Надішліть `POST` запит з `Content-Type: multipart/form-data`. Файл має бути
+частиною форми з `name="file"`.
 
-```json
-{
-  "file_id": "YOUR_UNIQU_FILE_ID",
-  "chunk_position": 0,
-  "key": "YOUR_API_KEY",
-}
+Приклад використання `curl`:
+```bash
+curl -X POST -H "Authorization: Bearer YOUR_API_KEY" \
+     -F "file=@/path/to/your/file.txt" \
+     http://localhost:8081/upload
 ```
+
+*response*
+202 Accepted (HTTP Status Code)
 
 ##### TODO
 
 - [ ] шифрування
 - [ ] стискання
 - [ ] список файлів
-- [ ] завантаження
-- [ ] видалення фалу
+- [ ] завантаження файлу
+- [ ] видалення файлу
+- [x] динамічне отримання метаданих файлу під час завантаження
