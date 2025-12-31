@@ -49,3 +49,24 @@ func (db *DataBase) UpdateFileMetadata(fileID uint, filename string, size int64,
 	}
 	return nil
 }
+
+func (db *DataBase) GetFilesListByKey(key string) []File {
+	var files []File
+	db.DB.Where(&File{OwnerAPIKey: key}).Find(&files)
+	return files
+}
+
+func (db *DataBase) GetFileByID(fileID uint) (File, error) {
+	var file File
+	res := db.DB.First(&file, fileID)
+	if res.Error != nil {
+		return file, res.Error
+	}
+	return file, nil
+}
+
+func (db *DataBase) GetChunksByFileID(fileID uint) []Chunk {
+	var chunks []Chunk
+	db.DB.Where(&Chunk{FileID: fileID}).Find(&chunks)
+	return chunks
+}

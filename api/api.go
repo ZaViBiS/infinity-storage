@@ -2,10 +2,13 @@
 package api
 
 import (
+	"bufio"
+	"fmt"
 	"io"
 	"math"
 	"mime"
 	"mime/multipart"
+	"sort"
 	"strings"
 	"time"
 
@@ -73,6 +76,8 @@ func (a *API) setupRoutes() {
 	a.app.Get("/", a.handleMain)
 	a.app.Get("/get_api_key", a.handleGetAPIKey)
 	a.app.Post("/upload", a.handleUpload)
+	a.app.Get("/list", a.handleGetFilesList)
+	a.app.Get("/get_file", a.handleGetFile)
 }
 
 func (a *API) handleMain(c *fiber.Ctx) error {
@@ -211,6 +216,71 @@ func (a *API) handleUpload(c *fiber.Ctx) error {
 			Msg("upload finished")
 	}
 	return c.SendStatus(fiber.StatusAccepted)
+}
+
+func (a *API) handleGetFilesList(c *fiber.Ctx) error {
+	// Перевірка API ключа
+	key, err := a.validateAPIKey(c)
+	if err != nil {
+		log.Warn().Err(err).Msg("невалідний API ключ")
+		return err
+	}
+	log.Debug().Str("key", key[:10]+"...").Msg("API ключ валідний")
+
+	files := a.db.GetFilesListByKey(key)
+
+	for _, file := range files {
+		println(file.FileName)
+	}
+
+	return c.Status(200).JSON(fiber.Map{"files": files})
+}
+
+func (a *API) handleGetFile(c *fiber.Ctx) error {
+	// Перевірка API ключа
+	key, err := a.validateAPIKey(c)
+	if err != nil {
+		log.Warn().Err(err).Msg("невалідний API ключ")
+		return err
+	}
+	log.Debug().Str("key", key[:10]+"...").Msg("API ключ валідний")
+
+	fileID := c.QueryInt("file_id")
+
+	file, err := a.db.GetFileByID(uint(fileID))
+	if err != nil {
+		log.Err(err).Msg("помилка отримання фалу з бази")
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err})
+	}
+
+	chunks := a.db.GetChunksByFileID(file.ID)
+	if len(chunks) != file.TotalChunks {
+		panic(fmt.Errorf("кількість чанків не збігаєтся"))
+	}
+	// сортування за позицією
+	sort.Slice(chunks, func(i, j int) bool {
+		return chunks[i].Position < chunks[j].Position
+	})
+
+	c.Set("Content-Type", "application/octet-stream")
+	c.Set("Content-Disposition", "attachment; filename="+file.FileName)
+	c.Set("Content-Length", fmt.Sprintf("%d", file.Size))
+
+	c.Context().SetBodyStreamWriter(func(w *bufio.Writer) {
+		for _, chunk := range chunks {
+			rawData, err := a.tgbot.GetFileByID(chunk.TelegramFileID)
+			if err != nil {
+				panic(err)
+			}
+
+			if _, err := w.Write(rawData); err != nil {
+				panic(err)
+			}
+
+			// w.Flush()
+		}
+	})
+	return nil
 }
 
 func (a *API) validateAPIKey(c *fiber.Ctx) (string, error) {
