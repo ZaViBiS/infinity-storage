@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infinity Storage - Unlimited File Storage</title>
+    <meta name="description" content="Store unlimited files using Telegram backend">
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <link rel="icon" type="image/svg+xml" href="assets/icons/favicon.svg">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <svg class="logo-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+                    </svg>
+                    <h1 class="logo-text">Infinity Storage</h1>
+                </div>
+                <div class="header-actions">
+                    <div class="api-key-status" id="apiKeyStatus">
+                        <span class="status-indicator offline"></span>
+                        <span class="status-text">No API Key</span>
+                    </div>
+                    <button class="btn btn-secondary btn-sm" id="settingsBtn">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M12 1v6m0 6v6m4.22-13.22l4.24 4.24M1.54 1.54l4.24 4.24M20.46 20.46l-4.24-4.24M1.54 20.46l4.24-4.24"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+        <div class="container">
+            <!-- Navigation Tabs -->
+            <nav class="nav-tabs" id="navTabs">
+                <button class="nav-tab active" data-tab="upload">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    Upload
+                </button>
+                <button class="nav-tab" data-tab="files">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                    Files
+                </button>
+                <button class="nav-tab" data-tab="settings">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M12 1v6m0 6v6m4.22-13.22l4.24 4.24M1.54 1.54l4.24 4.24M20.46 20.46l-4.24-4.24M1.54 20.46l4.24-4.24"></path>
+                    </svg>
+                    Settings
+                </button>
+            </nav>
+
+            <!-- Tab Content -->
+            <div class="tab-content">
+                <!-- Upload Tab -->
+                <div class="tab-pane active" id="uploadTab">
+                    <div class="upload-section">
+                        <div class="upload-area" id="uploadArea">
+                            <div class="upload-content">
+                                <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="17 8 12 3 7 8"></polyline>
+                                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                                </svg>
+                                <h3>Drop files here or click to browse</h3>
+                                <p>Support for all file types • Unlimited storage</p>
+                                <input type="file" id="fileInput" multiple hidden>
+                                <button class="btn btn-primary" id="browseBtn">Choose Files</button>
+                            </div>
+                        </div>
+
+                        <!-- Upload Queue -->
+                        <div class="upload-queue" id="uploadQueue" style="display: none;">
+                            <h4>Upload Queue</h4>
+                            <div class="queue-list" id="queueList"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Files Tab -->
+                <div class="tab-pane" id="filesTab">
+                    <div class="files-section">
+                        <div class="files-header">
+                            <div class="files-controls">
+                                <div class="search-box">
+                                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="11" cy="11" r="8"></circle>
+                                        <path d="M21 21l-4.35-4.35"></path>
+                                    </svg>
+                                    <input type="text" id="searchInput" placeholder="Search files...">
+                                </div>
+                                <div class="view-toggle">
+                                    <button class="view-btn active" data-view="grid">
+                                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="3" y="3" width="7" height="7"></rect>
+                                            <rect x="14" y="3" width="7" height="7"></rect>
+                                            <rect x="14" y="14" width="7" height="7"></rect>
+                                            <rect x="3" y="14" width="7" height="7"></rect>
+                                        </svg>
+                                    </button>
+                                    <button class="view-btn" data-view="list">
+                                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <line x1="8" y1="6" x2="21" y2="6"></line>
+                                            <line x1="8" y1="12" x2="21" y2="12"></line>
+                                            <line x1="8" y1="18" x2="21" y2="18"></line>
+                                            <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                                            <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                                            <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="files-stats" id="filesStats">
+                                <span class="stat-item">0 files</span>
+                            </div>
+                        </div>
+
+                        <!-- Files Grid/List -->
+                        <div class="files-container">
+                            <div class="files-grid" id="filesGrid">
+                                <!-- Files will be populated here -->
+                            </div>
+                            <div class="empty-state" id="emptyState">
+                                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                                    <polyline points="13 2 13 9 20 9"></polyline>
+                                </svg>
+                                <h3>No files yet</h3>
+                                <p>Upload your first file to get started</p>
+                                <button class="btn btn-primary" onclick="switchToUploadTab()">Upload Files</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings Tab -->
+                <div class="tab-pane" id="settingsTab">
+                    <div class="settings-section">
+                        <div class="setting-group">
+                            <h3>API Configuration</h3>
+                            <div class="setting-item">
+                                <label for="serverUrl">Server URL</label>
+                                <input type="text" id="serverUrl" value="http://localhost:8081" class="form-input">
+                            </div>
+                            <div class="setting-item">
+                                <label for="apiKeyInput">API Key</label>
+                                <div class="api-key-input">
+                                    <input type="password" id="apiKeyInput" class="form-input" placeholder="Enter or generate API key">
+                                    <button class="btn btn-secondary" id="generateKeyBtn">Generate</button>
+                                </div>
+                            </div>
+                            <div class="setting-actions">
+                                <button class="btn btn-primary" id="saveSettingsBtn">Save Settings</button>
+                                <button class="btn btn-outline" id="testConnectionBtn">Test Connection</button>
+                            </div>
+                        </div>
+
+                        <div class="setting-group">
+                            <h3>Storage Information</h3>
+                            <div class="storage-info" id="storageInfo">
+                                <div class="info-item">
+                                    <span class="label">Total Files:</span>
+                                    <span class="value" id="totalFiles">0</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="label">Total Size:</span>
+                                    <span class="value" id="totalSize">0 MB</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="label">Server Status:</span>
+                                    <span class="value status" id="serverStatus">Unknown</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="setting-group">
+                            <h3>Application</h3>
+                            <div class="setting-item">
+                                <label>Theme</label>
+                                <div class="theme-toggle">
+                                    <button class="theme-btn active" data-theme="light">Light</button>
+                                    <button class="theme-btn" data-theme="dark">Dark</button>
+                                </div>
+                            </div>
+                            <div class="setting-actions">
+                                <button class="btn btn-outline" id="clearDataBtn">Clear Local Data</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="server-status" id="footerServerStatus">
+                    <span class="status-indicator"></span>
+                    <span class="status-text">Checking server...</span>
+                </div>
+                <div class="footer-info">
+                    <span>Infinity Storage v1.0</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- File Modal -->
+    <div class="modal" id="fileModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">File Details</h3>
+                <button class="modal-close" id="modalClose">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- File details will be populated here -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="downloadBtn">Download</button>
+                <button class="btn btn-outline" id="deleteBtn">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="js/main.js"></script>
+    <script>
+        // Debugging helper
+        window.debugAPI = function() {
+            console.log('Current auth manager:', window.authManager);
+            console.log('Authenticated:', window.authManager?.isAuthenticated());
+            console.log('API Key:', window.authManager?.getApiKey());
+        };
+        
+        // Wait for initialization
+        setTimeout(() => {
+            console.log('App initialized:', window.app?.isInitialized);
+            debugAPI();
+        }, 2000);
+    </script>
+</body>
+</html>

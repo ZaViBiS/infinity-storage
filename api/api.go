@@ -37,9 +37,25 @@ func NewServer(TGBot tgbot.TGBot, database *db.DataBase) *API {
 		BodyLimit:                    -1,
 	})
 
+	// CORS middleware
 	app.Use(func(c *fiber.Ctx) error {
-		err := c.Next()
+		// Set CORS headers
+		c.Set("Access-Control-Allow-Origin", "*")
+		c.Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		c.Set("Access-Control-Allow-Headers", "Origin, Content-Type, Accept, Authorization, X-API-Key")
+		c.Set("Access-Control-Max-Age", "86400")
+
+		// Handle preflight requests
+		if c.Method() == "OPTIONS" {
+			return c.SendStatus(200)
+		}
+
+		return c.Next()
+	})
+
+	app.Use(func(c *fiber.Ctx) error {
 		start := time.Now()
+		err := c.Next()
 
 		statusCode := c.Response().StatusCode()
 		event := log.Info()

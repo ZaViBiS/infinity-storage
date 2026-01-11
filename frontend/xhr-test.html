@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>XHR Test</title>
+</head>
+<body>
+    <h1>XMLHttpRequest Test</h1>
+    <button onclick="testXHR()">Test XHR List Files</button>
+    <div id="result"></div>
+
+    <script>
+        function testXHR() {
+            const apiKey = 'K7Bhv6khZpDRvkvoRAVXPDzsEaknF4ALtvHy5Upbtb4';
+            const resultDiv = document.getElementById('result');
+            
+            resultDiv.innerHTML = '<p>Loading...</p>';
+            
+            const xhr = new XMLHttpRequest();
+            const url = 'http://localhost:8081/list';
+            
+            xhr.open('GET', url);
+            xhr.setRequestHeader('Authorization', `Bearer ${apiKey}`);
+            xhr.setRequestHeader('X-API-Key', apiKey);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            
+            xhr.addEventListener('load', function() {
+                console.log('XHR Status:', xhr.status);
+                console.log('XHR Response:', xhr.responseText);
+                
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    try {
+                        const data = JSON.parse(xhr.responseText);
+                        console.log('Parsed data:', data);
+                        
+                        resultDiv.innerHTML = `
+                            <h3>XHR Success!</h3>
+                            <p>Status: ${xhr.status}</p>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        `;
+                    } catch (parseError) {
+                        console.error('Parse error:', parseError);
+                        resultDiv.innerHTML = `<p>JSON Parse Error: ${parseError.message}</p>`;
+                    }
+                } else {
+                    resultDiv.innerHTML = `<p>XHR Error: ${xhr.status} - ${xhr.statusText}</p>`;
+                }
+            });
+            
+            xhr.addEventListener('error', function(error) {
+                console.error('XHR Error:', error);
+                resultDiv.innerHTML = `<p>Network Error: ${error}</p>`;
+            });
+            
+            xhr.addEventListener('timeout', function() {
+                console.error('XHR Timeout');
+                resultDiv.innerHTML = `<p>Request Timeout</p>`;
+            });
+            
+            xhr.timeout = 10000;
+            xhr.send();
+        }
+    </script>
+</body>
+</html>

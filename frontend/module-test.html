@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Module Test</title>
+</head>
+<body>
+    <h1>ES6 Module Test</h1>
+    <button onclick="testModule()">Test Module Loading</button>
+    <div id="result"></div>
+
+    <script type="module">
+        console.log('Module loading started');
+        
+        // Test if we can import the API module directly
+        try {
+            import('./js/api.js').then(apiModule => {
+                console.log('API module loaded:', apiModule);
+                window.apiModule = apiModule;
+                document.getElementById('result').innerHTML = '<p style="color: green;">✅ API module loaded successfully!</p>';
+            }).catch(error => {
+                console.error('Failed to load API module:', error);
+                document.getElementById('result').innerHTML = `<p style="color: red;">❌ Failed to load API module: ${error.message}</p>`;
+            });
+            
+            // Test if we can import auth module
+            import('./js/auth.js').then(authModule => {
+                console.log('Auth module loaded:', authModule);
+                window.authModule = authModule;
+            }).catch(error => {
+                console.error('Failed to load auth module:', error);
+            });
+            
+        } catch (error) {
+            console.error('Module import error:', error);
+            document.getElementById('result').innerHTML = `<p style="color: red;">❌ Module import error: ${error.message}</p>`;
+        }
+        
+        window.testModule = function() {
+            console.log('Testing module functionality...');
+            
+            if (window.apiModule && window.authModule) {
+                try {
+                    const API = window.apiModule.InfinityAPI;
+                    const authManager = new window.authModule.AuthManager();
+                    
+                    console.log('Creating API instance...');
+                    const api = new API('http://localhost:8081', 'K7Bhv6khZpDRvkvoRAVXPDzsEaknF4ALtvHy5Upbtb4');
+                    
+                    console.log('Testing listFiles...');
+                    api.listFiles().then(result => {
+                        console.log('listFiles result:', result);
+                        document.getElementById('result').innerHTML += '<p style="color: green;">✅ listFiles works!</p>';
+                    }).catch(error => {
+                        console.error('listFiles error:', error);
+                        document.getElementById('result').innerHTML += `<p style="color: red;">❌ listFiles failed: ${error.message}</p>`;
+                    });
+                    
+                } catch (error) {
+                    console.error('Module functionality error:', error);
+                    document.getElementById('result').innerHTML += `<p style="color: red;">❌ Module functionality error: ${error.message}</p>`;
+                }
+            } else {
+                document.getElementById('result').innerHTML += '<p style="color: orange;">⚠️ Modules not loaded yet</p>';
+            }
+        };
+    </script>
+</body>
+</html>

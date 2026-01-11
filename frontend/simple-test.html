@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple API Test</title>
+</head>
+<body>
+    <h1>Simple API Test</h1>
+    <button onclick="testList()">Test List Files</button>
+    <button onclick="testKey()">Generate API Key</button>
+    <div id="result"></div>
+
+    <script>
+        async function testList() {
+            const apiKey = 'K7Bhv6khZpDRvkvoRAVXPDzsEaknF4ALtvHy5Upbtb4';
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                resultDiv.innerHTML = '<p>Loading...</p>';
+                
+                const response = await fetch('http://localhost:8081/list', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'X-API-Key': apiKey
+                    }
+                });
+                
+                console.log('Response:', response);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('Data:', data);
+                
+                resultDiv.innerHTML = `
+                    <h3>Success!</h3>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+                
+            } catch (error) {
+                console.error('Error:', error);
+                resultDiv.innerHTML = `
+                    <h3>Error!</h3>
+                    <p>${error.message}</p>
+                    <pre>${error.stack}</pre>
+                `;
+            }
+        }
+        
+        async function testKey() {
+            try {
+                const response = await fetch('http://localhost:8081/get_api_key');
+                const data = await response.json();
+                console.log('New key:', data);
+                document.getElementById('result').innerHTML = `
+                    <h3>New API Key Generated</h3>
+                    <code>${data.key}</code>
+                `;
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('result').innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

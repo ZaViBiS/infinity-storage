@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Direct API Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        button { padding: 10px; margin: 10px; background: #3B82F6; color: white; border: none; cursor: pointer; }
+        #result { margin-top: 20px; padding: 10px; border: 1px solid #ccc; background: #f9f9f9; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <h1>Direct API Test - Debug Version</h1>
+    <button onclick="testDirectList()">Test Direct List Files</button>
+    <button onclick="testAuthFlow()">Test Auth Flow</button>
+    <div id="result"></div>
+
+    <script>
+        // CONFIG
+        const CONFIG = {
+            API_BASE_URL: 'http://localhost:8081',
+            TIMEOUT: 30000
+        };
+
+        // Direct API test without modules
+        async function testDirectList() {
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                resultDiv.innerHTML = '<p>Testing direct API call...</p>';
+                
+                console.log('=== Direct API Test Started ===');
+                
+                // Step 1: Generate API key
+                console.log('Step 1: Generating API key...');
+                const keyResponse = await fetch(`${CONFIG.API_BASE_URL}/get_api_key`);
+                if (!keyResponse.ok) {
+                    throw new Error(`API key generation failed: ${keyResponse.status}`);
+                }
+                const keyData = await keyResponse.json();
+                console.log('Generated key:', keyData.key.substring(0, 10) + '...');
+                
+                // Step 2: List files with the new key
+                console.log('Step 2: Listing files...');
+                const listResponse = await fetch(`${CONFIG.API_BASE_URL}/list`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${keyData.key}`,
+                        'X-API-Key': keyData.key,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                console.log('List response status:', listResponse.status);
+                console.log('List response headers:', Object.fromEntries(listResponse.headers.entries()));
+                
+                if (!listResponse.ok) {
+                    throw new Error(`List files failed: ${listResponse.status} ${listResponse.statusText}`);
+                }
+                
+                const listText = await listResponse.text();
+                console.log('List response text:', listText);
+                
+                const listData = JSON.parse(listText);
+                console.log('List parsed data:', listData);
+                console.log('Files array:', listData.files);
+                console.log('Files array type:', typeof listData.files);
+                console.log('Files array isArray:', Array.isArray(listData.files));
+                
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <h3>✅ Direct API Test Successful!</h3>
+                        <p><strong>API Key:</strong> ${keyData.key.substring(0, 10)}...</p>
+                        <p><strong>Response Status:</strong> ${listResponse.status}</p>
+                        <p><strong>Files Count:</strong> ${listData.files ? listData.files.length : 'undefined'}</p>
+                        <p><strong>Raw Response:</strong></p>
+                        <pre>${JSON.stringify(listData, null, 2)}</pre>
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error('Direct API test error:', error);
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ Direct API Test Failed</h3>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                        <pre>${error.stack}</pre>
+                    </div>
+                `;
+            }
+        }
+        
+        // Test auth flow like the real app
+        async function testAuthFlow() {
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                resultDiv.innerHTML = '<p>Testing auth flow...</p>';
+                
+                // Simulate localStorage
+                const apiKey = 'K7Bhv6khZpDRvkvoRAVXPDzsEaknF4ALtvHy5Upbtb4';
+                
+                console.log('=== Auth Flow Test Started ===');
+                console.log('Using API key:', apiKey.substring(0, 10) + '...');
+                
+                // Make request exactly like the frontend would
+                const response = await fetch(`${CONFIG.API_BASE_URL}/list`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'X-API-Key': apiKey,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                console.log('Auth flow response:', response);
+                
+                if (!response.ok) {
+                    throw new Error(`Auth flow failed: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('Auth flow data:', data);
+                
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <h3>✅ Auth Flow Test Successful!</h3>
+                        <p><strong>Status:</strong> ${response.status}</p>
+                        <p><strong>Files:</strong> ${data.files.length} items</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error('Auth flow error:', error);
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ Auth Flow Test Failed</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

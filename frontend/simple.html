@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infinity Storage - Simple</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/animations.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Infinity Storage - Simple Test</h1>
+        
+        <div class="settings-section">
+            <h3>API Settings</h3>
+            <div class="setting-item">
+                <label>Server URL:</label>
+                <input type="text" id="serverUrl" value="http://localhost:8081" class="form-input">
+            </div>
+            <div class="setting-item">
+                <label>API Key:</label>
+                <input type="password" id="apiKey" placeholder="Enter or generate API key" class="form-input">
+                <button onclick="generateKey()" class="btn btn-secondary">Generate</button>
+            </div>
+            <div class="setting-actions">
+                <button onclick="testConnection()" class="btn btn-primary">Test Connection</button>
+                <button onclick="loadFiles()" class="btn btn-outline">Load Files</button>
+            </div>
+        </div>
+        
+        <div class="files-section">
+            <h3>Files</h3>
+            <div id="filesList" class="files-grid"></div>
+            <div id="filesResult"></div>
+        </div>
+    </div>
+
+    <script>
+        // Simple configuration
+        const CONFIG = {
+            SERVER_URL: 'http://localhost:8081',
+            TIMEOUT: 30000
+        };
+        
+        let currentApiKey = '';
+        let currentFiles = [];
+        
+        // Generate API key
+        async function generateKey() {
+            try {
+                const response = await fetch(`${CONFIG.SERVER_URL}/get_api_key`);
+                if (!response.ok) throw new Error(`Failed: ${response.status}`);
+                
+                const data = await response.json();
+                document.getElementById('apiKey').value = data.key;
+                currentApiKey = data.key;
+                showMessage('API key generated!', 'success');
+                
+            } catch (error) {
+                showMessage(`Generate key error: ${error.message}`, 'error');
+            }
+        }
+        
+        // Test connection
+        async function testConnection() {
+            const serverUrl = document.getElementById('serverUrl').value.trim();
+            const apiKey = document.getElementById('apiKey').value.trim();
+            
+            if (!serverUrl || !apiKey) {
+                showMessage('Please enter server URL and API key', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${serverUrl}/`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'X-API-Key': apiKey
+                    }
+                });
+                
+                if (response.ok) {
+                    showMessage('Connection successful!', 'success');
+                } else {
+                    showMessage(`Connection failed: ${response.status}`, 'error');
+                }
+                
+            } catch (error) {
+                showMessage(`Connection error: ${error.message}`, 'error');
+            }
+        }
+        
+        // Load files
+        async function loadFiles() {
+            const serverUrl = document.getElementById('serverUrl').value.trim();
+            const apiKey = document.getElementById('apiKey').value.trim();
+            const filesList = document.getElementById('filesList');
+            const filesResult = document.getElementById('filesResult');
+            
+            if (!serverUrl || !apiKey) {
+                showMessage('Please enter server URL and API key', 'error');
+                return;
+            }
+            
+            try {
+                filesResult.innerHTML = '<p>Loading files...</p>';
+                
+                const response = await fetch(`${serverUrl}/list`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'X-API-Key': apiKey,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                console.log('Files response status:', response.status);
+                console.log('Files response headers:', Object.fromEntries(response.headers.entries()));
+                
+                if (!response.ok) {
+                    throw new Error(`Failed: ${response.status} ${response.statusText}`);
+                }
+                
+                const responseText = await response.text();
+                console.log('Files response text:', responseText);
+                
+                const data = JSON.parse(responseText);
+                console.log('Files parsed data:', data);
+                console.log('Files array:', data.files);
+                console.log('Files array type:', typeof data.files);
+                console.log('Files array isArray:', Array.isArray(data.files));
+                
+                currentFiles = data.files || [];
+                displayFiles(currentFiles);
+                
+                filesResult.innerHTML = `<p style="color: green;">✅ Loaded ${currentFiles.length} files</p>`;
+                
+            } catch (error) {
+                console.error('Load files error:', error);
+                filesResult.innerHTML = `<p style="color: red;">❌ Error: ${error.message}</p>`;
+            }
+        }
+        
+        // Display files
+        function displayFiles(files) {
+            const filesList = document.getElementById('filesList');
+            
+            if (!files || files.length === 0) {
+                filesList.innerHTML = '<p>No files found</p>';
+                return;
+            }
+            
+            filesList.innerHTML = files.map(file => `
+                <div class="file-card">
+                    <div class="file-info">
+                        <div class="file-name">${file.FileName}</div>
+                        <div class="file-meta">
+                            <span>Size: ${formatFileSize(file.Size)}</span>
+                            <span>Date: ${new Date(file.CreatedAt).toLocaleDateString()}</span>
+                        </div>
+                    </div>
+                    <div class="file-actions">
+                        <button onclick="downloadFile(${file.ID})" class="btn btn-sm btn-primary">Download</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // Download file
+        async function downloadFile(fileId) {
+            const serverUrl = document.getElementById('serverUrl').value.trim();
+            const apiKey = document.getElementById('apiKey').value.trim();
+            
+            try {
+                showMessage('Downloading file...', 'info');
+                
+                const response = await fetch(`${serverUrl}/get_file?file_id=${fileId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'X-API-Key': apiKey
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Download failed: ${response.status}`);
+                }
+                
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `file_${fileId}`;
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                showMessage('Download started!', 'success');
+                
+            } catch (error) {
+                showMessage(`Download error: ${error.message}`, 'error');
+            }
+        }
+        
+        // Utility functions
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        function showMessage(message, type = 'info') {
+            const messageDiv = document.createElement('div');
+            messageDiv.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px;
+                background: ${type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : '#3b82f6'};
+                color: white;
+                border-radius: 8px;
+                z-index: 1000;
+                max-width: 300px;
+                word-wrap: break-word;
+            `;
+            messageDiv.textContent = message;
+            document.body.appendChild(messageDiv);
+            
+            setTimeout(() => {
+                if (messageDiv.parentNode) {
+                    messageDiv.parentNode.removeChild(messageDiv);
+                }
+            }, 5000);
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            showMessage('Simple version loaded - enter API settings to continue', 'info');
+        });
+    </script>
+</body>
+</html>
